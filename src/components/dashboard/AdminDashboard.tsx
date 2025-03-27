@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, LineChart, Users, Shield, Settings } from "lucide-react";
+import { BarChart, LineChart, Users, Shield, Settings, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 export function AdminDashboard() {
