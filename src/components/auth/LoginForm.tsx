@@ -1,10 +1,11 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Check, Loader2, Mail } from "lucide-react";
+import { Check, Loader2, Mail, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 import {
   Form,
@@ -17,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Login form schema
 const loginSchema = z.object({
@@ -41,12 +43,13 @@ const magicLinkSchema = z.object({
 });
 
 type LoginFormProps = {
-  onLoginSuccess: () => void;
+  onLoginSuccess?: () => void;
 };
 
 export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login, signUp, sendMagicLink, socialLogin, isLoading } = useAuth();
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   
   // Login form
@@ -76,51 +79,84 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
     },
   });
 
-  function onLoginSubmit(values: z.infer<typeof loginSchema>) {
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Login successful",
-        description: "Welcome back to Natura!",
-      });
-      onLoginSuccess();
-    }, 1500);
+  async function onLoginSubmit(values: z.infer<typeof loginSchema>) {
+    try {
+      await login(values.email, values.password);
+      
+      // Call the onLoginSuccess callback if provided
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      } else {
+        // Otherwise navigate to dashboard
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      // Error is already handled in the auth context
+      console.error(error);
+    }
   }
 
-  function onSignupSubmit(values: z.infer<typeof signupSchema>) {
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Account created successfully",
-        description: "Welcome to Natura!",
-      });
-      onLoginSuccess();
-    }, 1500);
+  async function onSignupSubmit(values: z.infer<typeof signupSchema>) {
+    try {
+      await signUp(values.email, values.password, values.confirmPassword);
+      
+      // Call the onLoginSuccess callback if provided
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      } else {
+        // Otherwise navigate to dashboard
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      // Error is already handled in the auth context
+      console.error(error);
+    }
   }
 
-  function onMagicLinkSubmit(values: z.infer<typeof magicLinkSchema>) {
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+  async function onMagicLinkSubmit(values: z.infer<typeof magicLinkSchema>) {
+    try {
+      await sendMagicLink(values.email);
       setMagicLinkSent(true);
-      toast({
-        title: "Magic link sent",
-        description: `Check your email ${values.email} for a login link`,
-      });
-    }, 1500);
+    } catch (error) {
+      // Error is already handled in the auth context
+      console.error(error);
+    }
+  }
+
+  async function handleSocialLogin(provider: string) {
+    try {
+      await socialLogin(provider);
+      
+      // Call the onLoginSuccess callback if provided
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      } else {
+        // Otherwise navigate to dashboard
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      // Error is already handled in the auth context
+      console.error(error);
+    }
   }
 
   return (
     <div className="mx-auto max-w-md w-full p-6 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
       <h2 className="text-2xl font-bold mb-6 text-center">Access Your Dashboard</h2>
+      
+      <Alert className="mb-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Use these demo accounts with password: <strong>password123</strong>
+          <div className="grid grid-cols-1 mt-2 gap-1 text-xs">
+            <div><strong>Consumer:</strong> consumer@example.com</div>
+            <div><strong>Brand:</strong> brand@example.com</div>
+            <div><strong>Supplier:</strong> supplier@example.com</div>
+            <div><strong>Regulator:</strong> regulator@example.com</div>
+            <div><strong>Admin:</strong> admin@example.com</div>
+          </div>
+        </AlertDescription>
+      </Alert>
       
       <Tabs defaultValue="login" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
@@ -188,10 +224,22 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
           </div>
           
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" type="button" className="w-full">
+            <Button 
+              variant="outline" 
+              type="button" 
+              className="w-full"
+              onClick={() => handleSocialLogin("Google")}
+              disabled={isLoading}
+            >
               Google
             </Button>
-            <Button variant="outline" type="button" className="w-full">
+            <Button 
+              variant="outline" 
+              type="button" 
+              className="w-full"
+              onClick={() => handleSocialLogin("Apple")}
+              disabled={isLoading}
+            >
               Apple
             </Button>
           </div>
@@ -266,10 +314,22 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
           </div>
           
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" type="button" className="w-full">
+            <Button 
+              variant="outline" 
+              type="button" 
+              className="w-full"
+              onClick={() => handleSocialLogin("Google")}
+              disabled={isLoading}
+            >
               Google
             </Button>
-            <Button variant="outline" type="button" className="w-full">
+            <Button 
+              variant="outline" 
+              type="button" 
+              className="w-full"
+              onClick={() => handleSocialLogin("Apple")}
+              disabled={isLoading}
+            >
               Apple
             </Button>
           </div>

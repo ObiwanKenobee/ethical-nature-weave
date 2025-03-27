@@ -1,10 +1,13 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ArticlePreview } from "@/components/journal/ArticlePreview";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { useAuth } from "@/context/AuthContext";
 
 // Mock data for journal articles
 const articles = [
@@ -38,7 +41,15 @@ const articles = [
 ];
 
 export default function Journal() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user, logout } = useAuth();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const defaultTab = searchParams.get("tab") || "articles";
+
+  // Function to handle login success - redirect to dashboard
+  const handleLoginSuccess = () => {
+    navigate("/dashboard");
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -52,7 +63,7 @@ export default function Journal() {
               </span>
             </h1>
             
-            <Tabs defaultValue="articles" className="w-full">
+            <Tabs defaultValue={defaultTab} className="w-full">
               <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
                 <TabsTrigger value="articles">Articles</TabsTrigger>
                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
@@ -67,21 +78,29 @@ export default function Journal() {
               </TabsContent>
               
               <TabsContent value="dashboard" className="animate-fade-in">
-                {isLoggedIn ? (
+                {user ? (
                   <div className="p-6 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
-                    <h2 className="text-2xl font-bold mb-4">Welcome to your Dashboard</h2>
+                    <h2 className="text-2xl font-bold mb-4">Welcome to your Dashboard, {user.name}</h2>
                     <p className="text-muted-foreground mb-4">
-                      This is a placeholder for your personalized dashboard. Based on your role, you'll see different options and data here.
+                      You are logged in as a <span className="font-semibold capitalize">{user.role}</span>.
                     </p>
-                    <button 
-                      onClick={() => setIsLoggedIn(false)}
-                      className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
-                    >
-                      Sign Out
-                    </button>
+                    <div className="flex gap-3">
+                      <Button 
+                        onClick={() => navigate("/dashboard")}
+                        className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                      >
+                        Go to Dashboard
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={logout}
+                      >
+                        Sign Out
+                      </Button>
+                    </div>
                   </div>
                 ) : (
-                  <LoginForm onLoginSuccess={() => setIsLoggedIn(true)} />
+                  <LoginForm onLoginSuccess={handleLoginSuccess} />
                 )}
               </TabsContent>
             </Tabs>
